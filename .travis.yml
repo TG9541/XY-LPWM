@@ -1,0 +1,21 @@
+sudo: required
+language: c
+services:
+- docker
+before_install:
+- docker pull tg9541/docker-sdcc:V3.8.6
+install:
+- docker run -v `pwd`:/home tg9541/docker-sdcc:V3.8.6 /bin/sh -c "sdcc --version ;
+  sstm8 -version"
+script: docker run -v `pwd`:/home tg9541/docker-sdcc:V3.8.6 /bin/sh -c "cd /home &&
+  make release"
+deploy:
+  provider: releases
+  api_key:
+    secure: ctWvVKLme29ufOmHUhcvE+nqmtyVNIHy2jINtiL8XCwwefvbFXay+E4Cm3Y8EVx+HEgm155N2eHTqHrGv+QqfBBgqP46W8+5PrkyESrFqZtdxKMfODW5LpLe0NcqWcHh6lBVCT3iTl68syz3ZUWaF+oedZ/FEnkFLa0lmgxjmiBaMeBlIPGknmmKgxs99wSfEt0l2oYkFIWFAs1ek5W+y8IpETksDCnOw3u+x57rn+lGBvlpyH6vXLQhJGm3XrRzGgYX7awOUNTXJ1TtBsSQ1KoRX2pQtXj0uYyg2uhL1qFiP1oSYISbdOuuDDx/ZWZueDFa9cthh4yoyyF0ggHxlenwouSxwjNmSK7O28goaCgG4skrUyPWmluRyeS2H7qW521jWyXqNAv+2W69g7pFaOXWjce+dY01KVSdzYfpEULgKcbSY67Skp7BWXGQk3/3+oTYNTdD2gA9CkKd4iARbOnMdr3NldLUaMeDx6p4Z306nTgnYr5yGNc8j0eKRk16YCrgNujzFpgjEgjAqgS7p6Otuuir9sTxAM/0dQMtAm61Tc8TZwmUwteSMI2YxUabzDdrescvDFbsC7uSFAQPuzwOsVcRAf/XX34YO5ztPkSAigVZs74xVYFL6sMZ35Aj209k5L6oLsvjMMnt5oTe15H4rjMfPKev/MiwbpkwLRI=
+  file:
+    - "out/stm8ef-bin.zip"
+    - "out/stm8ef-bin.tgz"
+  skip_cleanup: true
+  on:
+    repo: TG9541/XY-LPWM
