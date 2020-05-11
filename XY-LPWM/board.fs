@@ -11,10 +11,16 @@
 #require LED7FIRST
 #require ]B!
 
+\ EEPROM storage for frequency and decade
+$4010 CONSTANT EE_FREQ
+$4012 CONSTANT EE_DECA
+$4014 CONSTANT EE_DUTY
+
 : TARGET NVM ;
 
 TARGET
 
+VARIABLE AUPDA
 VARIABLE UPDA
 VARIABLE INCR
 VARIABLE DECA
@@ -56,14 +62,32 @@ VARIABLE DUTY
       1 INCR !
     THEN
 
+    UPDA @ 0< IF
+      1 UPDA +!
+      UPDA @ IF
+        [ 1 LCDSYM 1+ 5 ]B!
+      ELSE
+        ULOCK
+        FREQ @ EE_FREQ !
+        DECA @ EE_DECA !
+        LOCK
+        [ 0 LCDSYM 1+ 5 ]B!
+      THEN
+    THEN
+
     \ STM8 eForth board keys with auto-repeat use ASCII codes
-    UPDA @ IF  CR  0 DUP UPDA !  0 1 ELSE  ?KEY  THEN IF
+    0 UPDA @ < IF  CR  0 DUP UPDA !  0 1 ELSE  ?KEY  THEN IF
       INCR @ ( c inc )
-      OVER 72 ( "H" ) = IF DUP FREQ @  + 1000 MIN FREQ ! 237 THEN
-      OVER 68 ( "D" ) = IF FREQ @ OVER -    0 MAX FREQ ! 237 THEN
-      OVER 66 ( "B" ) = IF DUP DUTY @  +   99 MIN DUTY !  17 THEN
-      OVER 65 ( "A" ) = IF DUTY @ OVER -    1 MAX DUTY !  17 THEN
-      ( c inc lim ) SWAP 3 + MIN INCR ! ( c ) DROP
+      OVER 72 ( "H" ) = IF DUP FREQ @  + 1000 MIN FREQ ! NIP 237 SWAP THEN
+      OVER 68 ( "D" ) = IF FREQ @ OVER -    0 MAX FREQ ! NIP 237 SWAP THEN
+      OVER 66 ( "B" ) = IF DUP DUTY @  +   99 MIN DUTY ! NIP  17 SWAP THEN
+      OVER 65 ( "A" ) = IF DUTY @ OVER -    1 MAX DUTY ! NIP  17 SWAP THEN
+      
+      OVER DUP 65 73 WITHIN NOT AND IF
+        -100 UPDA !
+      THEN
+
+      ( c/lim inc) 3 + MIN INCR !
 
       FREQ @ 1000 = IF
          1 DECA +!
@@ -98,10 +122,15 @@ VARIABLE DUTY
   ;
 
   : init ( -- )
-      4 LCDSYM !
-      1   DECA !
-    500   FREQ !
-      1   UPDA !
+    ULOCK
+    \ initialyze frequency and decade, initualize if out-of-range
+    EE_DECA @ DUP 0    4 WITHIN NOT IF DROP   0 DUP EE_DECA ! THEN DECA !
+    EE_FREQ @ DUP 1 1000 WITHIN NOT IF DROP 100 DUP EE_FREQ ! THEN FREQ !
+    EE_DUTY @ DUP 1  100 WITHIN NOT IF DROP  50 DUP EE_DUTY ! THEN DUTY !
+    LOCK
+
+    4 LCDSYM !
+    1   UPDA !
     [ ' UI ] LITERAL BG !
     2 T2init
   ;
