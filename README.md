@@ -1,9 +1,10 @@
 # STM8 eForth experiments with the XY-LPWM board
 
+[![Travis-CI](https://travis-ci.org/TG9541/XY-LPWM.svg?branch=master)](https://travis-ci.org/TG9541/XY-LPWM)
+
 ![XY-LPWM](https://raw.githubusercontent.com/wiki/plumbum/stm8ef/helo_forth.jpg)
 
 ## Hardware
-
 
 J3 ICP Pin|Signal
 -|-
