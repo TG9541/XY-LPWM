@@ -1,12 +1,12 @@
 STM8EF_BOARD=XY-LPWM
-STM8EF_VER=2.2.24.pre3
+STM8EF_VER=2.2.24.pre4
 STM8EF_BIN=stm8ef-bin.zip
 STM8EF_URL=https://github.com/TG9541/stm8ef/releases/download/${STM8EF_VER}/${STM8EF_BIN}
 
 E4THCOM=e4thcom
 TERM_PORT=ttyUSB0
 TERM_BAUD=9600
-TERM_FLAGS=
+TERM_FLAGS="-p mcu:target:lib"
 
 ifeq ($(BOARD),)
 
