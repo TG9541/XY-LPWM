@@ -8,9 +8,15 @@
 \res export TIM2_CCER1 TIM2_CCER2 TIM2_CR1 TIM2_ARRH
 \res export TIM2_CCR1H TIM2_CCR2H TIM2_CCR3H
 
-: target NVM ;
+#require LED7FIRST
+#require ]B!
+
+: TARGET NVM ;
+
 TARGET
 
+VARIABLE UPDA
+VARIABLE INCR
 VARIABLE DECA
 VARIABLE FREQ
 VARIABLE DUTY
@@ -45,15 +51,57 @@ VARIABLE DUTY
   ;
 
   : UI ( -- )
-    BKEY
-    DUP 8 AND IF  1 FREQ +! THEN
-    DUP 4 AND IF -1 FREQ +! THEN
-    DUP 2 AND IF  1 DUTY +! THEN
-        1 AND IF -1 DUTY +! THEN
-    FREQ ? DUTY ? CR
+    \ key release resets the progressive key-hold increment
+    BKEY 0= IF
+      1 INCR !
+    THEN
+
+    \ STM8 eForth board keys with auto-repeat use ASCII codes
+    UPDA @ IF  CR  0 DUP UPDA !  0 1 ELSE  ?KEY  THEN IF
+      INCR @ ( c inc )
+      OVER 72 ( "H" ) = IF DUP FREQ @  + 1000 MIN FREQ ! 237 THEN
+      OVER 68 ( "D" ) = IF FREQ @ OVER -    0 MAX FREQ ! 237 THEN
+      OVER 66 ( "B" ) = IF DUP DUTY @  +   99 MIN DUTY !  17 THEN
+      OVER 65 ( "A" ) = IF DUTY @ OVER -    1 MAX DUTY !  17 THEN
+      ( c inc lim ) SWAP 3 + MIN INCR ! ( c ) DROP
+
+      FREQ @ 1000 = IF
+         1 DECA +!
+        100 FREQ !
+      THEN
+      FREQ @ 100 < DECA @ AND IF
+        -1 DECA +!
+        999 FREQ !
+      THEN
+
+      DECA @
+      DUP 3 = IF
+        \ limit the 3rd decade to 150k
+        FREQ @ DUP 151 < NOT IF
+          DROP 150
+        THEN
+        DUP FREQ !  10 * .
+        \ decimal point in decade "3"
+        [ 1 LED7FIRST 2 + 7 ]B!
+      ELSE
+        \ lower limit of frequency in decade "0"
+        DUP 0 = FREQ @ 1 < AND IF 1 FREQ ! THEN
+        FREQ ?
+        \ decimal points in decades "1" and "2"
+        DUP 1 = IF [ 1 LED7FIRST 1 + 7 ]B! THEN
+        DUP 2 = IF [ 1 LED7FIRST 2 + 7 ]B! THEN
+      THEN
+
+      ( deca ) DROP DUTY ? CR
+
+    THEN
   ;
 
   : init ( -- )
+      4 LCDSYM !
+      1   DECA !
+    500   FREQ !
+      1   UPDA !
     [ ' UI ] LITERAL BG !
     2 T2init
   ;
