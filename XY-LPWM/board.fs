@@ -1,13 +1,9 @@
 \ STM8S103 Timer2 PWM
 \ refer to github.com/TG9541/stm8ef/blob/master/LICENSE.md
 
-#include STARTTEMP
+#require TIM2PWM
 
-\res MCU: STM8S103
-\res export TIM2_PSCR TIM2_CCMR1 TIM2_CCMR2 TIM2_CCMR3
-\res export TIM2_CCER1 TIM2_CCER2 TIM2_CR1 TIM2_ARRH
-\res export TIM2_CCR1H TIM2_CCR2H TIM2_CCR3H
-
+#require WIPE
 #require LED7FIRST
 #require ]B!
 
@@ -16,45 +12,10 @@ $4010 CONSTANT EE_FREQ
 $4012 CONSTANT EE_DECA
 $4014 CONSTANT EE_DUTY
 
-: TARGET NVM ;
-
-TARGET
-
-VARIABLE AUPDA
-VARIABLE UPDA
-VARIABLE INCR
-VARIABLE DECA
-VARIABLE FREQ
-VARIABLE DUTY
-
-  \
-  : T2Pre ( n -- )
-    ( n ) TIM2_PSCR  C!  \ TIMx prescaler (2^n)
-  ;
-
-  \ Set Timer2 reload value
-  : T2Reload ( n -- )
-    TIM2_ARRH 2C!
-  ;
-
-  \ Set PWM2 compare value
-  : PWM2 ( n -- )
-    TIM2_CCR2H 2C!
-  ;
-
-  \ convert duty cycle [1/1000] to PWM reload value
-  : setduty ( n -- n )
-    TIM2_ARRH 2C@ 1000 */
-  ;
-
-
-  \ Init Timer2 with prescaler CC PWM2
-  : T2init ( n -- )
-    ( n ) T2Pre
-    $60 TIM2_CCMR2 C!    \ TIMx OC2M = PWM mode 1
-    $10 TIM2_CCER1 C!    \ TIMx CC2 enable
-    1   TIM2_CR1 C!
-  ;
+NVM
+  VARIABLE STOR   \ neg. number starts EEPROM store sequence
+  VARIABLE UPDA   \ resquest LCD update
+  VARIABLE INCR   \ progressive increment/decrement
 
   : UI ( -- )
     \ key release resets the progressive key-hold increment
@@ -62,29 +23,33 @@ VARIABLE DUTY
       1 INCR !
     THEN
 
-    UPDA @ 0< IF
-      1 UPDA +!
-      UPDA @ IF
+    \ show symbol SET while/after keys are pressed, store values to EEPROM
+    STOR @ 0< IF
+      1 STOR +!
+      STOR @ IF
         [ 1 LCDSYM 1+ 5 ]B!
       ELSE
         ULOCK
         FREQ @ EE_FREQ !
         DECA @ EE_DECA !
+        DUTY @ EE_DUTY !
         LOCK
         [ 0 LCDSYM 1+ 5 ]B!
+        1 UPDA !
       THEN
     THEN
 
-    \ STM8 eForth board keys with auto-repeat use ASCII codes
-    0 UPDA @ < IF  CR  0 DUP UPDA !  0 1 ELSE  ?KEY  THEN IF
+    \ UPDA request LCD refresh, ?KEY produces ASCII codes with auto-repeat
+    UPDA @ IF  CR  0 DUP UPDA !  0 1 ELSE  ?KEY  THEN IF
       INCR @ ( c inc )
       OVER 72 ( "H" ) = IF DUP FREQ @  + 1000 MIN FREQ ! NIP 237 SWAP THEN
       OVER 68 ( "D" ) = IF FREQ @ OVER -    0 MAX FREQ ! NIP 237 SWAP THEN
       OVER 66 ( "B" ) = IF DUP DUTY @  +   99 MIN DUTY ! NIP  17 SWAP THEN
       OVER 65 ( "A" ) = IF DUTY @ OVER -    1 MAX DUTY ! NIP  17 SWAP THEN
-      
-      OVER DUP 65 73 WITHIN NOT AND IF
-        -100 UPDA !
+
+      \ detect a keypress (c=0 signals LCD update)
+      OVER ( c/lim ) IF
+        -100 STOR !
       THEN
 
       ( c/lim inc) 3 + MIN INCR !
@@ -117,7 +82,7 @@ VARIABLE DUTY
       THEN
 
       ( deca ) DROP DUTY ? CR
-
+      CALCPWM
     THEN
   ;
 
@@ -132,11 +97,12 @@ VARIABLE DUTY
     4 LCDSYM !
     1   UPDA !
     [ ' UI ] LITERAL BG !
-    2 T2init
+    TIM2PWM
+    hi
   ;
 
  ' init 'BOOT !
-ENDTEMP
+WIPE RAM
 
 \\ Example:
 

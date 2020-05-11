@@ -1,0 +1,56 @@
+#require WIPE
+
+\res MCU: STM8S103
+\res export TIM2_PSCR TIM2_CCMR1 TIM2_CCMR2 TIM2_CCMR3
+\res export TIM2_CCER1 TIM2_CCER2 TIM2_CR1 TIM2_ARRH
+\res export TIM2_CCR1H TIM2_CCR2H TIM2_CCR3H
+
+NVM
+
+  VARIABLE FREQ   \ PWM frequency * 1
+  VARIABLE DECA   \ PWM frequency: factor log10
+  VARIABLE DUTY   \ PWM duty cycle
+
+  \
+  : T2Pre ( n -- )
+    ( n ) TIM2_PSCR  C!  \ TIMx prescaler (2^n)
+  ;
+
+  \ Set Timer2 reload value
+  : T2Reload ( n -- )
+    TIM2_ARRH 2C!
+  ;
+
+  \ Set PWM2 compare value
+  : PWM2 ( n -- )
+    TIM2_CCR2H 2C!
+  ;
+
+  HERE
+  8 C,   0 , 62500 ,  \ 10^0
+  5 C,   7 , 41248 ,  \ 10^1
+  2 C,  61 ,  2305 ,  \ 10^2
+  0 C,  24 , 27136 ,  \ 10^3
+  0 C,   2 , 28928 ,  \ 10^4
+  0 C,   0 , 16000 ,  \ 10^5
+  ( here ) CONSTANT CTIM2
+
+  : CALCPWM ( -- )
+    DECA @ 0= IF
+      FREQ @ DUP 10 < IF 0 ELSE 10 100 WITHIN IF 1 ELSE 2 THEN THEN
+    ELSE
+      DECA @ 2+
+    THEN
+    5 * CTIM2 + DUP C@ T2pre 1+ 2@ FREQ @ UM/MOD NIP DUP T2reload
+    DUTY @ 100 */ PWM2
+  ;
+
+  \ Init Timer2 with prescaler CC PWM2
+  : TIM2PWM (  -- )
+    $60 TIM2_CCMR2 C!    \ TIMx OC2M = PWM mode 1
+    $10 TIM2_CCER1 C!    \ TIMx CC2 enable
+    1   TIM2_CR1 C!
+    CALCPWM
+  ;
+
+WIPE RAM
