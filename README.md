@@ -14,7 +14,7 @@ J3 ICP Pin|Signal
 4|STM8S003F3P6 Vcap (do not connect)
 5|GND
 
-Recently XY-LPWM modules are based on the Nuvoton N76E003AT20 controller which is a MCS51 type "pin-compatible" replacement for the STM8S003F3P6 which is otherwise incompatible.
+Recently XY-LPWM modules are based on the Nuvoton N76E003AT20 controller which is a MCS51 type "pin-compatible" replacement for the STM8S003F3P6 which is otherwise incompatible. A [new board](https://github.com/TG9541/XY-LPWM/issues/1) has appeared that uses an unknown µC in an SO16 package. This means it's getting more risky to use this board if you intend modify it.
 
 ![schematics](https://protosupplies.com/wp-content/uploads/2019/09/XY-LPWM-Schematic.jpg)
 
